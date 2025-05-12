@@ -7,7 +7,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDistributedMemoryCache();
-//builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen();
 dbconnect.Connectionstring=builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddSession(option =>
 {
@@ -20,11 +20,11 @@ builder.Services.AddSession(option =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    //app.UseSwagger();
-   // app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+//}
 app.UseSession();
 //app.UseHttpsRedirection();
 

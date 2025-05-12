@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using VMS_API;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using VMS_API.Models;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace VMS_API.Controllers
 {
@@ -13,14 +15,24 @@ namespace VMS_API.Controllers
         db_Utility util = new db_Utility();
 
 
-        [Route("Login")]
-        [HttpPost]
-        public IActionResult Login()
+
+        [HttpPost("Login")]
+        public IActionResult Login([FromBody] Login obj)
         {
-            string Email = Request.Form["Email"].ToString();
-            string Password = Request.Form["Password"].ToString();
-            string encptpass = CreateMD5(Password);
-            var ds = util.Fill("exec udp_BranchLogin @BranchEmail='"+Email+"',@BranchPassword='" + encptpass + "'");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    Status = 400,
+                    Message = "Invalid login data",
+                    Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+                });
+            }
+
+
+
+            string encptpass = util.CreateMD5(obj.Password);
+            var ds = util.Fill("exec udp_BranchLogin @BranchEmail='" + obj.UserName + "',@BranchPassword='" + encptpass + "'");
 
             if (ds.Tables[0].Rows[0]["status"].ToString() != "fail")
             {
@@ -33,34 +45,27 @@ namespace VMS_API.Controllers
             {
                 HttpContext.Session.Clear();
             }
-            
-         
-            return Content(JsonConvert.SerializeObject(ds.Tables[0]),"application/json");
-           
+            return Content(JsonConvert.SerializeObject(ds.Tables[0]), "application/json");
         }
 
-        [Route("DDList")]
-        public IActionResult DDList(string Name)
+
+    
+
+
+    [HttpGet("GetEmployeeName")]
+    public IActionResult DDList(string Name)
+    {
+        var ds = util.Fill("exec DDList @Id1='" + Name + "'");
+        if (ds.Tables[0].Rows.Count != 0)
         {
-            var ds = util.Fill("exec DDList @Id1='"+Name+"'");
-            return Content(JsonConvert.SerializeObject(ds.Tables[0]),"application/json");
+            return Content(JsonConvert.SerializeObject(ds.Tables[0]), "application/json");
         }
-        public string CreateMD5(string password)
+        else
         {
-            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
-            {
-                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(password);
-                byte[] hashBytes = md5.ComputeHash(inputBytes);
-
-                // Convert the byte array to hexadecimal string
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < hashBytes.Length; i++)
-                {
-                    sb.Append(hashBytes[i].ToString("X2"));
-                }
-                return sb.ToString();
-            }
+            return NotFound(new { Massage = "Record Not Found !!", Status = "404" });
         }
-
     }
+
+
+}
 }
